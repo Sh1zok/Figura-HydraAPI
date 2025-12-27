@@ -1,7 +1,7 @@
 --[[
     ■■■■■ HydraAPI
     ■   ■ Author: Sh1zok
-    ■■■■  v0.1.0
+    ■■■■  v0.1.1
 
 MIT License
 
@@ -49,23 +49,22 @@ function hydraAPI:newHead(modelPart, parameters, matrixFunction)
     local interface = {}
     local headParameters = parameters or {strength = 1, speed = 1, maxTiltDegrees = 2.5}
     local headModelPart = modelPart
-    local vanillaHeadRotPrevFrame, vanillaHeadPosPrevFrame = vec(0, 0, 0), vec(0, 0, 0)
+    local headRotPrevFrame, headPosPrevFrame, headScalePrevFrame = vec(0, 0, 0), vec(0, 0, 0), vec(1, 1, 1)
     local UUID = client:intUUIDToString(client:generateUUID())
 
     local headMatrixFunction = matrixFunction or function(parameters)
-        logTable(parameters)
         local vanillaHeadRot = parameters.vanillaHeadRotation
-        local vanillaHeadRotPrevFrame = parameters.vanillaHeadRotationPreviousFrame
+        local headRotPrevFrame = parameters.headRotationPreviousFrame
         local vanillaHeadPos = parameters.vanillaHeadPosition
         local speed, strength, maxTiltDegrees = parameters.otherParameters.speed, parameters.otherParameters.strength, parameters.otherParameters.maxTiltDegrees
 
         local headRot = math.lerp(
-            vanillaHeadRotPrevFrame,
+            headRotPrevFrame,
             vanillaHeadRot * strength,
             math.min(8 / math.max(client:getFPS(), 1) * speed, 1)
         )
         headRot[3] = math.lerp(
-            vanillaHeadRotPrevFrame[3],
+            headRotPrevFrame[3],
             vanillaHeadRot[2] * maxTiltDegrees / 50,
             math.min(8 / math.max(client:getFPS(), 1) * speed, 1)
         )
@@ -83,19 +82,25 @@ function hydraAPI:newHead(modelPart, parameters, matrixFunction)
         if not player:isLoaded() then return end
         if not context == "RENDER" or context == "FIRST_PERSON" or context == "MINECRAFT_GUI" then return end
 
-        local vanillaHeadRotation, vanillaHeadPosition = (vanilla_model.HEAD:getOriginRot() + 180) % 360 - 180, vanilla_model.HEAD:getOriginPos()
+        local vanillaHeadRotation = (vanilla_model.HEAD:getOriginRot() + 180) % 360 - 180
+        local vanillaHeadPosition = vanilla_model.HEAD:getOriginPos()
+        local vanillaHeadScale = vanilla_model.HEAD:getOriginScale()
 
         local headRotation, headPosition, headScale = headMatrixFunction({
             vanillaHeadRotation = vanillaHeadRotation,
-            vanillaHeadRotationPreviousFrame = vanillaHeadRotPrevFrame,
+            headRotationPreviousFrame = headRotPrevFrame,
             vanillaHeadPosition = vanillaHeadPosition,
-            vanillaHeadPositionPreviousFrame = vanillaHeadPosPrevFrame,
+            headPositionPreviousFrame = headPosPrevFrame,
+            vanillaHeadScale = vanillaHeadScale,
+            headScalePreviousFrame = headScalePrevFrame,
             renderParameters = {delta = delta, context = context, matrix = matrix},
             otherParameters = headParameters
         })
-        headModelPart:setRot(headRotation):setPos(headPosition):setScale(headScale)
+        if headRotation then headModelPart:setRot(headRotation) end
+        if headPosition then headModelPart:setPos(headPosition) end
+        if headScale then headModelPart:setScale(headScale) end
 
-        vanillaHeadRotPrevFrame, vanillaHeadPosPrevFrame = vanillaHeadRotation, vanillaHeadPosition
+        headRotPrevFrame, headPosPrevFrame, headScalePrevFrame = headRotation, headPosition, headScale
     end, "HydraAPI.Head." .. UUID)
 
 
