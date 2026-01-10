@@ -1,7 +1,7 @@
 --[[
     ■■■■■ DynamicAPI
     ■   ■ Author: Sh1zok
-    ■■■■  v0.2.0
+    ■■■■  v0.2.1
 
 MIT License
 
@@ -45,8 +45,9 @@ function dynamicAPI:newDynamicModelPart(modelPart, parameters, onRenderFunction)
     ]]--
     local modelPartNativeParentType = modelPart:getParentType()
     local interface = {}
+    local UUID = client:intUUIDToString(client:generateUUID())
     if modelPartNativeParentType ~= "None" then modelPart:setParentType("None") end
-    modelPart.preRender = onRenderFunction
+    events.render:register(onRenderFunction, UUID)
 
     --[[
         INTERFACE
@@ -72,14 +73,16 @@ function dynamicAPI:newDynamicModelPart(modelPart, parameters, onRenderFunction)
     function interface:setOnRender(newOnRenderFunction)
         assert(type(newOnRenderFunction) == "function", "Invalid argument to function setOnRender. Expected Function, but got " .. type(newOnRenderFunction))
 
-        if onRenderFunction then onRenderFunction = nil end
-        modelPart.preRender = newOnRenderFunction
+        onRenderFunction = newOnRenderFunction
+        events.render:remove(UUID)
+        events.render:register(onRenderFunction, UUID)
 
         return interface -- Returns interface for chaining
     end
 
     function interface:getModelPart() return modelPart end
     function interface:getParameters() return parameters end
+    function interface:getOnRenderFunction() return onRenderFunction end
 
     function interface:remove()
         if modelPartNativeParentType ~= "None" then modelPart:setParentType(modelPartNativeParentType) end
